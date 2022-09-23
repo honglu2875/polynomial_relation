@@ -6,10 +6,10 @@ def g1(x, y):
     return x * y
 
 def g2(x, y):
-    return x * x
+    return x * y
 
 def g3(x, y):
-    return y * y
+    return torch.zeros_like(x)
 
 
 class SmallNet(nn.Module):
@@ -35,13 +35,16 @@ class SmallNet(nn.Module):
 def recursive_reg(x):
     if isinstance(x, dict):
         s = 0
+        minimal = 100000
         for value in x.values():
-            s += torch.sum(torch.abs(recursive_reg(value)))
-        return s
-    return torch.sum(torch.abs(x))
+            #s += torch.sum(torch.abs(recursive_reg(value)))
+            minimal = min(torch.min(torch.abs(recursive_reg(value))), minimal)
+        return minimal
+    #return torch.sum(torch.abs(x))
+    return torch.min(torch.abs(x))
 
 def main():
-    epochs = 10000
+    epochs = 1000
     input_dim = 2
     sample_size = 100
     fns = (g1, g2, g3)
@@ -69,8 +72,13 @@ def main():
         # Training
         opt.zero_grad()
         output = net_ground_truth(inp)
-        loss = loss_fn(output, zero) + recursive_reg(net_ground_truth.state_dict())
-        #loss = loss_fn(output, zero) 
+        #loss = loss_fn(output, zero) / recursive_reg(net_ground_truth.state_dict()) ** 4
+        #print(net_ground_truth.state_dict())
+        #print(recursive_reg(net_ground_truth.state_dict()))
+        state_dict = net_ground_truth.state_dict()
+        #loss = loss_fn(output, zero) / (torch.sum(torch.abs(state_dict['lin1.weight'])**4) * torch.sum(torch.abs(state_dict['output.weight']))**2)
+
+        loss = loss_fn(output, zero) 
         #loss = 
         #loss.backward()
         #opt.step()
