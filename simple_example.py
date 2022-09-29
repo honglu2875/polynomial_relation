@@ -53,7 +53,7 @@ def main():
 
     summary = SummaryWriter(log_dir="runs")
 
-    net_ground_truth = SmallNet(input_dim, fns)
+    net = SmallNet(input_dim, fns)
    
     """ 
     # The ground truth network for testing purpose
@@ -67,9 +67,10 @@ def main():
     net_ground_truth.load_state_dict(state_dict)
     """
 
-    opt = optim.Adam(net_ground_truth.parameters(), lr=0.001)
+    opt = optim.Adam(net.parameters(), lr=0.001)
     loss_fn = nn.functional.mse_loss
     zero = torch.zeros((sample_size, 1))
+    loss = 100
     for i in range(epochs):
         if loss>0.02:
          opt.lr=0.02   
@@ -87,10 +88,10 @@ def main():
         
         # Training
         opt.zero_grad()
-        output = net_ground_truth(inp)
-        #loss = loss_fn(output, zero) / recursive_reg(net_ground_truth.state_dict()) ** 4
-        #print(net_ground_truth.state_dict())
-        #print(recursive_reg(net_ground_truth.state_dict()))
+        output = net(inp)
+        #loss = loss_fn(output, zero) / recursive_reg(net.state_dict()) ** 4
+        #print(net.state_dict())
+        #print(recursive_reg(net.state_dict()))
 
         #loss = loss_fn(output, zero) / (torch.sum(torch.abs(state_dict['lin1.weight'])**4) * torch.sum(torch.abs(state_dict['output.weight']))**2)
         loss = loss_fn(output, zero) 
@@ -99,7 +100,7 @@ def main():
         
         opt.step()
         
-        state_dict = net_ground_truth.state_dict()
+        state_dict = net.state_dict()
         
         if i%100==0:
             print(loss)
@@ -109,10 +110,10 @@ def main():
 
     for i in range(10):
         inp = torch.rand((sample_size, input_dim)) * 10
-        #print(net_ground_truth(inp))
-        print(loss_fn(net_ground_truth(inp), zero))
+        #print(net(inp))
+        print(loss_fn(net(inp), zero))
     
-    print(net_ground_truth.state_dict())
+    print(net.state_dict())
 
 
 if __name__ == '__main__':
