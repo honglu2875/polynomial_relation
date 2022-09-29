@@ -1,4 +1,6 @@
 import torch
+from torch.utils.tensorboard import SummaryWriter
+
 from torch import nn
 from torch import optim
 
@@ -49,6 +51,8 @@ def main():
     sample_size = 100
     fns = (g1, g2, g3)
 
+    summary = SummaryWriter(log_dir="runs")
+
     net_ground_truth = SmallNet(input_dim, fns)
    
     """ 
@@ -80,23 +84,28 @@ def main():
         
         inp = torch.rand((sample_size, input_dim)) * 1
         #opt.lr=0.001/(i+1)
+        
         # Training
         opt.zero_grad()
         output = net_ground_truth(inp)
         #loss = loss_fn(output, zero) / recursive_reg(net_ground_truth.state_dict()) ** 4
         #print(net_ground_truth.state_dict())
         #print(recursive_reg(net_ground_truth.state_dict()))
-        state_dict = net_ground_truth.state_dict()
-        loss = loss_fn(output, zero) / (torch.sum(torch.abs(state_dict['lin1.weight'])**4) * torch.sum(torch.abs(state_dict['output.weight']))**2)
 
-        #loss = loss_fn(output, zero) 
-        #loss = 
-        #loss.backward()
-        #opt.step()
+        #loss = loss_fn(output, zero) / (torch.sum(torch.abs(state_dict['lin1.weight'])**4) * torch.sum(torch.abs(state_dict['output.weight']))**2)
+        loss = loss_fn(output, zero) 
+
         loss.backward()
-        for param in net_ground_truth.parameters():
-            param.data -= opt.lr * param.grad.data
-        print(loss)
+        
+        opt.step()
+        
+        state_dict = net_ground_truth.state_dict()
+        
+        if i%100==0:
+            print(loss)
+            summary.add_scalar('loss', loss, i)
+            for key, value in state_dict.items():
+                summary.add_histogram(key, value, i)
 
     for i in range(10):
         inp = torch.rand((sample_size, input_dim)) * 10
