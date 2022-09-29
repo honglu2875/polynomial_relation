@@ -71,19 +71,32 @@ def main():
     loss_fn = nn.functional.mse_loss
     zero = torch.zeros((sample_size, 1))
     for i in range(epochs):
+        if loss>0.02:
+         opt.lr=0.02   
+        elif loss>0.01:
+         opt.lr=0.01
+        elif loss>0.001:
+         opt.lr=0.005
+        elif loss>0.0002:
+         opt.lr=0.003   
+        else:
+         opt.lr=0.0015
+        
         inp = torch.rand((sample_size, input_dim)) * 1
-        opt.lr=0.001/(i+1)
+        #opt.lr=0.001/(i+1)
+        
         # Training
         opt.zero_grad()
         output = net_ground_truth(inp)
         #loss = loss_fn(output, zero) / recursive_reg(net_ground_truth.state_dict()) ** 4
         #print(net_ground_truth.state_dict())
         #print(recursive_reg(net_ground_truth.state_dict()))
-        #loss = loss_fn(output, zero) / (torch.sum(torch.abs(state_dict['lin1.weight'])**4) * torch.sum(torch.abs(state_dict['output.weight']))**2)
 
+        #loss = loss_fn(output, zero) / (torch.sum(torch.abs(state_dict['lin1.weight'])**4) * torch.sum(torch.abs(state_dict['output.weight']))**2)
         loss = loss_fn(output, zero) 
-        #loss = 
+
         loss.backward()
+        
         opt.step()
         
         state_dict = net_ground_truth.state_dict()
