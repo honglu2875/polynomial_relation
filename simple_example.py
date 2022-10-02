@@ -8,10 +8,11 @@ def g1(x, y):
     return x * y
 
 def g2(x, y):
-    return x * y
+    return x * x
 
 def g3(x, y):
-    return torch.zeros_like(x)
+    return y * y
+    #return torch.zeros_like(x)
 
 
 class SmallNet(nn.Module):
@@ -19,8 +20,8 @@ class SmallNet(nn.Module):
         super().__init__()
         self.input_dim = input_dim
         self.fns = fns
-        self.lin1 = nn.Linear(len(self.fns), len(self.fns), bias=True)
-        self.output = nn.Linear(len(self.fns), 1, bias=True)
+        self.lin1 = nn.Linear(len(self.fns), len(self.fns), bias=False)
+        self.output = nn.Linear(len(self.fns), 1, bias=False)
 
     def forward(self, x):
         out = []
@@ -46,7 +47,7 @@ def recursive_reg(x):
     return torch.min(torch.abs(x))
 
 def main():
-    epochs = 1000
+    epochs = 50000
     input_dim = 2
     sample_size = 100
     fns = (g1, g2, g3)
@@ -67,10 +68,13 @@ def main():
     net_ground_truth.load_state_dict(state_dict)
     """
 
-    opt = optim.Adam(net.parameters(), lr=0.001)
     loss_fn = nn.functional.mse_loss
     zero = torch.zeros((sample_size, 1))
     loss = 100
+    state_dict = net.state_dict()
+    state_dict['lin1.weight'][0, 0] = 1.0
+    #state_dict['lin1.weight'][0, 0].requires_grad = False
+    opt = optim.Adam(net.parameters(), lr=0.001)
     for i in range(epochs):
         if loss>0.02:
          opt.lr=0.02   
@@ -99,19 +103,27 @@ def main():
         loss.backward()
         
         opt.step()
+        #print(state_dict['lin1.weight'][0, 0].requires_grad)
+        state_dict['lin1.weight'][0, 0] = 1.0
+        state_dict['output.weight'][0, 0] = 1.0
         
-        state_dict = net.state_dict()
         
-        if i%100==0:
+        
+        if i%1000==0:
             print(loss)
-            summary.add_scalar('loss', loss, i)
-            for key, value in state_dict.items():
-                summary.add_histogram(key, value, i)
-
+            #summary.add_scalar('loss', loss, i)
+            #for key, value in state_dict.items():
+            #    summary.add_histogram(key, value, i)
+        
     for i in range(10):
         inp = torch.rand((sample_size, input_dim)) * 10
         #print(net(inp))
         print(loss_fn(net(inp), zero))
+
+    print("------")
+    print(net(torch.tensor([[1.0, 0.0]])))
+    print(net(torch.tensor([[0.0, 1.0]])))
+    
     
     print(net.state_dict())
 
